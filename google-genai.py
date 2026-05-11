@@ -11,6 +11,7 @@ import os
 # Documentation:
 # https://googleapis.github.io/python-genai/
 from google import genai
+from google.genai import types
 
 # Helper library to load environment variables from a .env file into the process's environment.
 from dotenv import load_dotenv
@@ -24,25 +25,28 @@ api_key = os.getenv("GOOGLE_API_KEY")
 # We create a client object that will be used to interact with the GenAI API.
 client = genai.Client(api_key=api_key)
 
+grounding_tool = types.Tool(google_search=types.GoogleSearch())
 # Stream vs non-streaming response:
 STREAM_ON = False
 
 # Gemini Model
-MODEL = "gemini-3-flash-preview"
+MODEL = "gemini-2.5-flash"
 # Prompt
 PROMPT = "What is the weather like in Paris?"
 IMG = Image.open("media/pic.jpg")
-CONFIG = {"system_instruction": "You are a medieval knight who speaks in Old English.", "tools": [{'google_search_retrieval':{}}]}
+CONFIG = {"system_instruction": "You are a medieval knight who speaks in Old English.", "tools": [grounding_tool]}
 
 def main():
   chat = client.chats.create(model=MODEL, config=CONFIG)
-  response = chat.send_message([PROMPT])
+  
   # Generate content with the Gemini 3 Flash Preview model.
   if STREAM_ON:
+    response = chat.send_message_stream([PROMPT])
     # If streaming is on, we will receive an iterator that yields parts of the response as they are generated.
     for chunk in response:
       print(chunk.text, end='', flush=True)  # flush=True makes it print immediately
   else:
+    response = chat.send_message([PROMPT])
     # The response is a Python object that contains the generated content and metadata.
     print(response.text)
   print("///")
